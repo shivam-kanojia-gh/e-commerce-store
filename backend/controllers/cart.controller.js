@@ -1,5 +1,7 @@
 import Product from "../models/product.model.js";
 
+// NOTE: why are we using id instead of _id everywhere
+
 export const getCartItems = async (req, res) => {
   try {
     const products = await Product.find({ _id: { $in: req.user.cartItems } });
@@ -80,7 +82,7 @@ export const removeAllFromCart = async (req, res) => {
     const user = req.user;
 
     if (!productId) {
-      user.cartItems = [];
+      user.cartItems = []; // NOTE: doubt
     } else {
       user.cartItems = user.cartItems.filter((item) => item.id !== productId); 
     }
