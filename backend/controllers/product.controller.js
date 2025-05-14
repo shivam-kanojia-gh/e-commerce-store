@@ -1,9 +1,10 @@
 import { redis } from "../lib/redis.js";
-import { Product } from "../models/product.model.js";
+import Product from "../models/product.model.js";
 import cloudinary from "../lib/cloudinary.js";
 
 export const getAllProducts = async (req, res) => {
   try {
+    // fetch from mongodb 
     const products = await Product.find({}); // find all products
     res.status(200).json({ products });
   } catch (error) {
@@ -19,6 +20,7 @@ export const getFeaturedProducts = async (req, res) => {
     // check for featured products in redis
     let featuredProducts = await redis.get("featured_products");
 
+    // if in redis
     if (featuredProducts) {
       return res.status(200).json(JSON.parse(featuredProducts)); // convert string to object
     }
@@ -27,6 +29,7 @@ export const getFeaturedProducts = async (req, res) => {
     // .lean() to convert mongoose object to js object, good for performance
     featuredProducts = await Product.find({ isFeatured: true }).lean();
 
+    // check if no featured products
     if (!featuredProducts) {
       return res.status(404).json({ message: "No featured products found" });
     }
@@ -45,6 +48,7 @@ export const getFeaturedProducts = async (req, res) => {
 
 export const getRecommendedProducts = async (req, res) => {
   try {
+    // fetch 3 random products from mongodb and return specific fields only
     const products = await Product.aggregate([
       {
         $sample: { size: 3 },
@@ -71,6 +75,7 @@ export const getRecommendedProducts = async (req, res) => {
 
 export const getProductsByCategory = async (req, res) => {
   try {
+    // fetch from mongodb by category
     const products = await Product.find({ category: req.params.category });
 
     res.status(200).json(products);
@@ -84,16 +89,20 @@ export const getProductsByCategory = async (req, res) => {
 
 export const createProduct = async (req, res) => {
   try {
+    // get product details from request body
     const { name, description, price, image, category } = req.body;
 
+    // upload image to cloudinary
     let cloudinaryResponse = null;
 
+    // if image exists
     if (image) {
       cloudinaryResponse = await cloudinary.uploader.upload(image, {
         folder: "products",
       });
     }
 
+    // create product
     const product = await Product.create({
       name,
       description,
@@ -113,12 +122,15 @@ export const createProduct = async (req, res) => {
 
 export const toggleFeaturedProduct = async (req, res) => {
   try {
+    // get product by id
     const product = await Product.findById(req.params.id);
 
+    // toggle isFeatured
     if (product) {
       product.isFeatured = !product.isFeatured;
       const updatedProduct = await product.save();
 
+      // update featured products cache
       await updateFeaturedProductsCache();
 
       res.status(200).json(updatedProduct);
@@ -135,6 +147,7 @@ export const toggleFeaturedProduct = async (req, res) => {
 
 async function updateFeaturedProductsCache() {
   try {
+    // update featured products cache
     const featuredProducts = await Product.find({ isFeatured: true }).lean();
     await redis.set("featured_prducts", JSON.stringify(featuredProducts));
   } catch (error) {
@@ -144,14 +157,16 @@ async function updateFeaturedProductsCache() {
 
 export const deleteProduct = async (req, res) => {
   try {
+    // get product by id
     const product = await Product.findById(req.params.id);
 
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
 
+    // delete image from cloudinary
     if (product.image) {
-      const publicId = product.image.split("/").pop().split(".")[0];
+      const publicId = product.image.split("/").pop().split(".")[0]; // get public id from url 
 
       try {
         await cloudinary.uploader.destroy(`products/${publicId}`);
@@ -161,6 +176,7 @@ export const deleteProduct = async (req, res) => {
       }
     }
 
+    // delete product from mongodb
     await Product.findByIdAndDelete(req.params.id);
 
     res.status(200).json({ message: "Product deleted successfully" });
