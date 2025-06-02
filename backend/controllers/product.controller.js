@@ -6,7 +6,7 @@ export const getAllProducts = async (req, res) => {
   try {
     // fetch from mongodb 
     const products = await Product.find({}); // find all products
-    res.status(200).json({ products });
+    res.status(200).json(products);
   } catch (error) {
     console.log("Error in get all products controller:", error.message);
     res
@@ -107,7 +107,7 @@ export const createProduct = async (req, res) => {
       name,
       description,
       price,
-      image: cloudinaryResponse.secure_url ? cloudinaryResponse.secure_url : "",
+      image: cloudinaryResponse?.secure_url ? cloudinaryResponse.secure_url : "",
       category,
     });
 
@@ -145,21 +145,11 @@ export const toggleFeaturedProduct = async (req, res) => {
   }
 };
 
-async function updateFeaturedProductsCache() {
-  try {
-    // update featured products cache
-    const featuredProducts = await Product.find({ isFeatured: true }).lean();
-    await redis.set("featured_prducts", JSON.stringify(featuredProducts));
-  } catch (error) {
-    console.log("Error updating featured products cache:", error.message);
-  }
-}
-
 export const deleteProduct = async (req, res) => {
   try {
     // get product by id
     const product = await Product.findById(req.params.id);
-
+    
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
@@ -170,7 +160,6 @@ export const deleteProduct = async (req, res) => {
 
       try {
         await cloudinary.uploader.destroy(`products/${publicId}`);
-        console.log("Image deleted from cloudinary");
       } catch (error) {
         console.log("Error deleting image from cloudinary:", error.message);
       }
@@ -178,6 +167,9 @@ export const deleteProduct = async (req, res) => {
 
     // delete product from mongodb
     await Product.findByIdAndDelete(req.params.id);
+
+    // update featured products cache
+    await updateFeaturedProductsCache();
 
     res.status(200).json({ message: "Product deleted successfully" });
   } catch (error) {
@@ -187,3 +179,13 @@ export const deleteProduct = async (req, res) => {
       .json({ message: "Internal server error", error: error.message });
   }
 };
+
+async function updateFeaturedProductsCache() {
+  try {
+    // update featured products cache
+    const featuredProducts = await Product.find({ isFeatured: true }).lean();
+    await redis.set("featured_products", JSON.stringify(featuredProducts));
+  } catch (error) {
+    console.log("Error updating featured products cache:", error.message);
+  }
+}

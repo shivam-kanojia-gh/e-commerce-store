@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 3000;
 
 const app = express();
 
-app.use(express.json()); // parse json
+app.use(express.json({ limit: "10mb" })); // parse json
 app.use(cookieParser()); // parse cookies
 
 app.use("/api/auth", authRouter);
