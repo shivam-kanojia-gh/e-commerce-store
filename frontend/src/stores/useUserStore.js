@@ -9,7 +9,7 @@ export const useUserStore = create((set, get) => ({
 
   signup: async ({ name, email, password, confirmPassword }) => {
     set({ loading: true });
-    
+
     if (password !== confirmPassword) {
       set({ loading: false });
       return toast.error("Passwords do not match");
@@ -50,6 +50,7 @@ export const useUserStore = create((set, get) => ({
       const res = await axios.get("/auth/profile");
       set({ user: res.data, checkingAuth: false });
     } catch (error) {
+      console.log(error.message);
       set({ checkingAuth: false });
     }
   },

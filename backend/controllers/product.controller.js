@@ -51,7 +51,7 @@ export const getRecommendedProducts = async (req, res) => {
     // fetch 3 random products from mongodb and return specific fields only
     const products = await Product.aggregate([
       {
-        $sample: { size: 3 },
+        $sample: { size: 4 },
       },
       {
         $project: {
