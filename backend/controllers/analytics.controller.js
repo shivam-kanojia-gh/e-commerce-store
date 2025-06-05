@@ -11,7 +11,7 @@ export const getAnalyticsData = async () => {
       $group: {
         _id: null, // group all documents together
         totalSales: { $sum: 1 },
-        totalRevenue: { $sum: $totalAmount },
+        totalRevenue: { $sum: "$totalAmount" },
       },
     },
   ]);
