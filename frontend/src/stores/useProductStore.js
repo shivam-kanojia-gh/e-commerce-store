@@ -74,6 +74,7 @@ export const useProductStore = create((set, get) => ({
         ),
         loading: false,
       }));
+
       toast.success("Product deleted successfully");
     } catch (error) {
       set({ loading: false });
