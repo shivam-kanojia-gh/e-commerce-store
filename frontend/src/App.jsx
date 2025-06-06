@@ -45,10 +45,7 @@ function App() {
         <Navbar />
 
         <Routes>
-          <Route
-            path="/"
-            element={!user ? <Navigate to={"/login"} /> : <HomePage />}
-          />
+          <Route path="/" element={<HomePage />} />
           <Route
             path="/signup"
             element={!user ? <SignUpPage /> : <Navigate to={"/"} />}
