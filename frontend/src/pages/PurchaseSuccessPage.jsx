@@ -4,6 +4,7 @@ import { Link } from "react-router";
 import { useCartStore } from "../stores/useCartStore";
 import axios from "../lib/axios";
 import Confetti from "react-confetti";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 function PurchaseSuccessPage() {
   const [isProcessing, setIsProcessing] = useState(true);
@@ -34,7 +35,7 @@ function PurchaseSuccessPage() {
     }
   }, [clearCart]);
 
-  if (isProcessing) return "Processing...";
+  if (isProcessing) return <LoadingSpinner />;
 
   if (error) return `Error: ${error}`;
 

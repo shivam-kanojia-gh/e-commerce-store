@@ -88,13 +88,13 @@ export const useCartStore = create(
     },
 
     calculateTotals: () => {
-      const { cart, coupon } = get();
+      const { cart, coupon, isCouponApplied } = get();
       const subtotal = cart.reduce(
         (sum, item) => sum + item.price * item.quantity,
         0
       );
       let total = subtotal;
-      if (coupon) {
+      if (coupon && isCouponApplied) {
         const discount = subtotal * (coupon.discountPercentage / 100);
         total = total - discount;
       }
@@ -104,7 +104,7 @@ export const useCartStore = create(
     getMyCoupon: async () => {
       try {
         const res = await axios.get("/coupons");
-        set({ coupon: res.data });
+        set({ coupon: res.data, isCouponApplied: false });
       } catch (error) {
         console.error("Error fetching coupon:", error);
       }
@@ -122,7 +122,7 @@ export const useCartStore = create(
     },
 
     removeCoupon: () => {
-      set({ coupon: null, isCouponApplied: false });
+      set({ isCouponApplied: false });
       get().calculateTotals();
       toast.success("Coupon removed");
     },

@@ -5,7 +5,7 @@ import { devtools } from "zustand/middleware";
 import { useCartStore } from "./useCartStore";
 
 export const useProductStore = create(
-  devtools((set, get) => ({
+  devtools((set) => ({
     products: [],
     loading: false,
 

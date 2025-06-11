@@ -36,7 +36,6 @@ export const createCheckoutSession = async (req, res) => {
       coupon = await Coupon.findOne({
         code: couponCode,
         userId: req.user._id,
-        isActive: true,
       });
       totalAmount -= Math.round(
         (totalAmount * coupon.discountPercentage) / 100
@@ -69,10 +68,6 @@ export const createCheckoutSession = async (req, res) => {
       },
     });
 
-    if (totalAmount >= 20000) {
-      await createNewCoupon(req.user._id);
-    }
-
     res.status(200).json({ id: session.id, totalAmount: totalAmount / 100 });
   } catch (error) {
     console.log("Error in create checkout session controller:", error.message);
@@ -91,8 +86,19 @@ async function createStripeCoupon(discountPercentage) {
 }
 
 async function createNewCoupon(userId) {
-  await Coupon.findOneAndDelete({ userId });
-  
+  const existingCoupon = await Coupon.findOne({ userId });
+
+  if (existingCoupon) {
+    // If coupon exists, make it active
+    existingCoupon.isActive = true;
+    existingCoupon.expirationDate = new Date(
+      Date.now() + 30 * 24 * 60 * 60 * 1000
+    ); // Reset expiration to 30 days
+    await existingCoupon.save();
+    return existingCoupon;
+  }
+
+  // If no coupon exists, create a new one
   const newCoupon = new Coupon({
     code: "GIFT" + Math.random().toString(36).substring(2, 8).toUpperCase(),
     discountPercentage: 10,
@@ -101,7 +107,6 @@ async function createNewCoupon(userId) {
   });
 
   await newCoupon.save();
-
   return newCoupon;
 }
 
@@ -112,6 +117,7 @@ export const checkoutSuccess = async (req, res) => {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
 
     if (session.payment_status === "paid") {
+      // Deactivate used coupon if any
       if (session.metadata.couponCode) {
         await Coupon.findOneAndUpdate(
           {
@@ -137,10 +143,14 @@ export const checkoutSuccess = async (req, res) => {
 
       await newOrder.save();
 
+      // Generate or activate coupon if purchase amount is greater than $1000
+      if (session.amount_total >= 100000) {
+        await createNewCoupon(session.metadata.userId);
+      }
+
       res.status(200).json({
         success: true,
-        message:
-          "Payment successful, order created, and coupon deactivated if used",
+        message: "Payment successful, order created, and coupon handled",
         orderId: newOrder._id,
       });
     }

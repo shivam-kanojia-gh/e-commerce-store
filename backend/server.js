@@ -1,5 +1,6 @@
 import express from "express";
 import cookieParser from "cookie-parser";
+import path from "path";
 
 import { connectDB } from "./lib/db.js";
 
@@ -14,6 +15,7 @@ import analyticsRoutes from "./routes/analytics.route.js";
 import "dotenv/config";
 
 const PORT = process.env.PORT || 3000;
+const __dirname = path.resolve();
 
 const app = express();
 
@@ -26,6 +28,14 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/coupons", couponRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/analytics", analyticsRoutes);
+
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "/frontend/dist")));
+
+  app.get("*", (req, res) => {
+    res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"));
+  });
+}
 
 app.listen(PORT, () => {
   console.log("Server is running on http://localhost:" + PORT);
